@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1060843900032",
+    "project_id": "seccom-f64b5",
+    "storage_bucket": "seccom-f64b5.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1060843900032:android:ab05492819ba2f4295ea65",
+        "android_client_info": {
+          "package_name": "com.example.securecom"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC10hATDaUYqN1ldeJWzvr2a4l4HGQHx_0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
