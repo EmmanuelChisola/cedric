@@ -25,6 +25,7 @@ class _CalendarState extends State<Calendar> {
   void initState() {
     selectedEvents = {};
     _fetchEventsFromFirestore();
+    _deletePastEvents();
     super.initState();
   }
 
@@ -47,6 +48,28 @@ class _CalendarState extends State<Calendar> {
       );
     }
   }
+
+  // Function to delete past events from Firestore
+  Future<void> _deletePastEvents() async {
+    DateTime now = DateTime.now();
+    try {
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('events')
+          .where('date', isLessThan: now)
+          .get();
+
+      for (var doc in snapshot.docs) {
+        await FirebaseFirestore.instance.collection('events').doc(doc.id).delete();
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("An error occurred while deleting past events."),
+        ),
+      );
+    }
+  }
+
 
   Future<void> _updateEventInFirestore(String id, String title) async {
     try {
@@ -105,7 +128,7 @@ class _CalendarState extends State<Calendar> {
       }
 
       setState(() {
-        // Trigger UI update after fetching events
+
       });
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -217,16 +240,6 @@ class _CalendarState extends State<Calendar> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("KBC's Calendar"),
-        backgroundColor: Colors.blueGrey[200],
-        centerTitle: true,
-        titleTextStyle: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 24.0,
-          color: Colors.white,
-        ),
-      ),
       body: Column(
         children: [
           Padding(
@@ -344,7 +357,8 @@ class _CalendarState extends State<Calendar> {
                           ),
                         ),
                       ),
-                      trailing: Row (
+                      trailing: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+                    ? Row (
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton (
@@ -356,7 +370,7 @@ class _CalendarState extends State<Calendar> {
                             onPressed: () => _showDeleteDialog(event.id),
                           ),
                         ],
-                      ),
+                      ):null,
                     ),
                   ),
                 );

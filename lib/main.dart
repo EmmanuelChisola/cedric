@@ -24,6 +24,7 @@ Future main() async {
     await Firebase.initializeApp();
   }
   runApp(const KBCApp());
+
 }
 
 class KBCApp extends StatelessWidget {

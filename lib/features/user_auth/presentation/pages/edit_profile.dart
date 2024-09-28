@@ -99,22 +99,22 @@ class _EditProfilePageState extends State<EditProfilePage> {
                 ),
               ),
               Center(
-                  child: InkWell(
-                    onTap: _pickImage, // Trigger image picker on tap
-                    child: Container(
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                      ),
-                      padding: const EdgeInsets.all(2.0),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        color: Colors.blueAccent,
-                        size: 24.0,
-                      ),
+                child: InkWell(
+                  onTap: _pickImage, // Trigger image picker on tap
+                  child: Container(
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    padding: const EdgeInsets.all(2.0),
+                    child: const Icon(
+                      Icons.camera_alt,
+                      color: Colors.blueAccent,
+                      size: 24.0,
                     ),
                   ),
                 ),
+              ),
               const SizedBox(height: 20),
               Text(
                 'Email',

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:securecom/features/user_auth/presentation/pages/add_ministry.dart';
 
@@ -43,6 +44,7 @@ class _MinistriesPageState extends State<MinistriesPage> {
 
   List<Ministry> ministries = [];
 
+
   @override
   void initState() {
     super.initState();
@@ -76,7 +78,7 @@ class _MinistriesPageState extends State<MinistriesPage> {
               onPressed: () async {
                 // Save the updated values
                 final updatedMinistry = Ministry(
-                  id: ministry.id,  // Ensure you have the ID from the original ministry
+                  id: ministry.id,
                   name: _nameController.text,
                   description: _descriptionController.text,
                 );
@@ -119,10 +121,8 @@ class _MinistriesPageState extends State<MinistriesPage> {
                 // Perform the delete operation on Firestore
                 final firestore = FirebaseFirestore.instance;
                 await firestore.collection('ministries').doc(ministry.id).delete();
-
                 // Refresh the list of ministries
                 _fetchMinistriesFromDatabase();
-
                 // Close the dialog
                 Navigator.of(context).pop();
               },
@@ -162,16 +162,12 @@ class _MinistriesPageState extends State<MinistriesPage> {
       context: context,
       builder: (context) => AddMinistryDialog(
         onMinistryAdded: (ministry) async {
-          // Add the new ministry to the database
           await _addMinistryToDatabase(ministry as Ministry);
-          // Refresh the list of ministries
           _fetchMinistriesFromDatabase();
         },
       ),
     );
   }
-
-
 
   @override
 
@@ -189,7 +185,8 @@ class _MinistriesPageState extends State<MinistriesPage> {
             child: ListTile(
               title: Text(ministry.name),
               subtitle: Text(ministry.description),
-              trailing: Row(
+              trailing: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+                  ? Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
@@ -201,16 +198,17 @@ class _MinistriesPageState extends State<MinistriesPage> {
                     onPressed: () => _deleteMinistry(context, ministry),
                   ),
                 ],
-              ),
+              ):null,
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+          ? FloatingActionButton(
         onPressed: _addMinistry,
         child: Icon(Icons.add),
         tooltip: 'Add Ministry',
-      ),
+      ):null,
     );
   }
 }

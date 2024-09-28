@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:securecom/features/user_auth/presentation/pages/add_member.dart';
+import 'package:securecom/features/user_auth/presentation/pages/edit_member.dart';
 import 'package:securecom/features/user_auth/presentation/pages/login_pg.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -63,47 +64,49 @@ class _MembersPageState extends State<MembersPage> {
     });
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Members'),
-        actions: [
-          PopupMenuButton<String>(
-            onSelected: (String value) {
-              setState(() {
-                sortBy = value;
-              });
-            },
-            itemBuilder: (BuildContext context) {
-              return [
-                const PopupMenuItem<String>(
-                  value: 'firstName',
-                  child: Text('Sort by First Name'),
-                ),
-                const PopupMenuItem<String>(
-                  value: 'lastName',
-                  child: Text('Sort by Last Name'),
-                ),
-              ];
-            },
-          ),
-        ],
-      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8.0),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: 'Search...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                      ),
+                    ),
+                    onChanged: (text) {
+                      setState(() {
+                        query = text;
+                      });
+                    },
+                  ),
                 ),
-              ),
-              onChanged: (text) {
-                setState(() {
-                  query = text;
-                });
-              },
+                PopupMenuButton<String>(
+                  onSelected: (String value) {
+                    setState(() {
+                      sortBy = value;
+                    });
+                  },
+                  itemBuilder: (BuildContext context) {
+                    return [
+                      const PopupMenuItem<String>(
+                        value: 'firstName',
+                        child: Text('Sort by First Name'),
+                      ),
+                      const PopupMenuItem<String>(
+                        value: 'lastName',
+                        child: Text('Sort by Last Name'),
+                      ),
+                    ];
+                  },
+                  icon: const Icon(Icons.more_vert),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -130,30 +133,78 @@ class _MembersPageState extends State<MembersPage> {
                     placeholder: (context, url) => const CircularProgressIndicator(),
                     errorWidget: (context, url, error) => const Icon(Icons.error),
                     imageBuilder: (context, imageProvider) => CircleAvatar(
+                      radius: 30,
                       backgroundImage: imageProvider,
                     ),
                   ),
-                  title: Text(member.fullName),
+                  title: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: member.firstName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' ${member.lastName}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.normal,
+                            color: Colors.black,
+                            fontSize: 18.0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(member.phoneNumber),
-                      Text(member.emailAddress),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            member.phoneNumber,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      Row(
+                        children: [
+                          const Icon(Icons.email, size: 16, color: Colors.grey),
+                          const SizedBox(width: 4),
+                          Text(
+                            member.emailAddress,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
-                  trailing: Row(
+                  trailing: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+                      ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.edit),
+                        icon: const Icon(Icons.edit, color: Colors.blue),
                         onPressed: () {
-                          // Implement your edit functionality here
+                          // Replace 'member.id' with the actual member ID from your data
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Update_Members(memberId: member.id),
+                            ),
+                          );
                         },
                       ),
+
                       IconButton(
-                        icon: const Icon(Icons.delete),
+                        icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () async {
-                          final memberId = filteredMembers[index].id; // Assuming you have a unique ID for each member
+                          final memberId = filteredMembers[index].id;
 
                           // Show a confirmation dialog before deleting
                           bool? confirmDelete = await showDialog<bool>(
@@ -179,7 +230,10 @@ class _MembersPageState extends State<MembersPage> {
                           if (confirmDelete == true) {
                             try {
                               // Delete member from Firestore
-                              await FirebaseFirestore.instance.collection('members').doc(memberId).delete();
+                              await FirebaseFirestore.instance
+                                  .collection('members')
+                                  .doc(memberId)
+                                  .delete();
 
                               // Remove the member from the local list and update the UI
                               setState(() {
@@ -187,7 +241,8 @@ class _MembersPageState extends State<MembersPage> {
                               });
 
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Member deleted successfully')),
+                                const SnackBar(
+                                    content: Text('Member deleted successfully')),
                               );
                             } catch (e) {
                               print("Error deleting member: $e");
@@ -196,10 +251,11 @@ class _MembersPageState extends State<MembersPage> {
                               );
                             }
                           }
-                        }
+                        },
                       ),
                     ],
-                  ),
+                  )
+                      : null,
                   onTap: () {
                     Navigator.push(
                       context,
@@ -214,16 +270,16 @@ class _MembersPageState extends State<MembersPage> {
           ),
         ],
       ),
-      floatingActionButton: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
-          ? FloatingActionButton.extended(
+      floatingActionButton:
+      FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+          ? FloatingActionButton(
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const AddMember()),
           );
         },
-        label: const Text("Add Member"),
-        icon: const Icon(Icons.add),
+        child: const Icon(Icons.add),
       )
           : const SizedBox.shrink(),
     );

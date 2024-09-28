@@ -50,6 +50,8 @@ class FirebaseAuthServices{
     return null;
   }
 
+
+
   Future<void> signout() async{
     try{
      await _auth.signOut();

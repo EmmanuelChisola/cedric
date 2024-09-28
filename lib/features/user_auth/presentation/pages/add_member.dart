@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: '',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
@@ -46,6 +46,7 @@ class _AddMemberState extends State<AddMember> {
   File? _image; // To store the selected image
 
   final List<String> _ministries = [
+    'Campus Outreach Ministry',
     'Children\'s Ministry',
     'Conference Ministry',
     'Electronic Media Ministry',

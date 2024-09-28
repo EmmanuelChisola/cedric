@@ -1,16 +1,13 @@
 import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:securecom/features/user_auth/presentation/pages/calendar.dart';
 import 'package:securecom/features/user_auth/presentation/pages/edit_profile.dart';
 import 'package:securecom/features/user_auth/presentation/pages/login_pg.dart';
 import 'package:securecom/features/user_auth/presentation/pages/members.dart';
-import 'package:securecom/features/user_auth/presentation/pages/ministries.dart';
 import 'package:securecom/features/user_auth/presentation/pages/ministry_screen.dart';
 import 'package:securecom/forms.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class Announcements {
@@ -34,17 +31,24 @@ class ChurchHomePage extends StatefulWidget {
 }
 
 class _ChurchHomePageState extends State<ChurchHomePage> {
+
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   int _selectedIndex = 0;
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+  ThemeMode _themeMode = ThemeMode.system;
+
+
 
   List<Map<String, String>> sermonLinks = [];
   List<Announcements> announcements = [];
 
   @override
   void initState() {
+
     super.initState();
     _fetchSermonLinksFromFirestore();
     _fetchAnnouncementsFromFirestore();
+
   }
 
   Future<void> _fetchSermonLinksFromFirestore() async {
@@ -187,7 +191,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
     }
   }
 
-  void _editSermonInfoDialog() {
+  void _addSermonInfoDialog() {
     String title = '';
     String preacher = '';
     String url = '';
@@ -267,6 +271,13 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
     }
   }
 
+  void _toggleTheme() {
+    setState(() {
+      _themeMode =
+      _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     User? user = FirebaseAuth.instance.currentUser;
@@ -274,8 +285,12 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
     String firstLetter = email.isNotEmpty ? email[0].toUpperCase() : 'U';
     String? photoURL = user?.photoURL;
 
-    return Scaffold(
-      key: _scaffoldKey,
+    return MaterialApp(
+        themeMode: _themeMode,
+        theme: ThemeData.light(),
+    darkTheme: ThemeData.dark(),
+    home: Scaffold(
+    key: _scaffoldKey,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: const Text('KBConnect'),
@@ -335,14 +350,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
         ],
         selectedItemColor: Colors.blue,
       ),
-      floatingActionButton: _selectedIndex == 0
-          ? FloatingActionButton(
-        onPressed: () {
-          _editSermonInfoDialog();
-        },
-        child: const Icon(Icons.edit),
-      )
-          : null,
+    )
     );
   }
 
@@ -370,14 +378,8 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
             ),
             otherAccountsPictures: [
               GestureDetector(
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditProfilePage(user: user),
-                    ),
-                  );
+                onTap: (){
+
                 },
                 child: const Icon(
                   Icons.edit,
@@ -392,13 +394,10 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
                 fontSize: 17.0,
                 fontWeight: FontWeight.bold),),
           ListTile(
-            leading: const Icon(Icons.home),
-            title: const Text('Home'),
+            leading: Icon(_themeMode == ThemeMode.light ? Icons.dark_mode : Icons.light_mode),
+            title: const Text('Themes'),
             onTap: () {
-              Navigator.pop(context);
-              setState(() {
-                _selectedIndex = 0;
-              });
+              _toggleTheme();
             },
           ),
           ListTile(
@@ -422,7 +421,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
             title: const Text('Notifications'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to settings page
+              // Navigate to notifications
             },
           ),
           ListTile(
@@ -601,7 +600,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
               onPressed: () {
                 if (announcementTitle.isNotEmpty &&
                     announcementDetails.isNotEmpty) {
-                  // Add the announcement to Firebase or your data source
+                  // Add the announcement to Firebase
                   _addAnnouncement(announcementTitle, announcementDetails);
                   Navigator.of(context).pop();
                 } else {
@@ -619,7 +618,99 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
     );
   }
 
+  void _editAnnouncementDialog(String id, String currentTitle, String currentDetails) {
+    String title = currentTitle;
+    String details = currentDetails;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Edit Announcement'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              TextField(
+                onChanged: (value) {
+                  title = value;
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Title',
+                ),
+                controller: TextEditingController(text: title),
+              ),
+              TextField(
+                onChanged: (value) {
+                  details = value;
+                },
+                decoration: const InputDecoration(
+                  hintText: 'Details',
+                ),
+                controller: TextEditingController(text: details),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            ElevatedButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Update'),
+              onPressed: () {
+                if (title.isNotEmpty && details.isNotEmpty) {
+                  _updateAnnouncement(id, title, details);
+                  Navigator.of(context).pop();
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill all fields.'),
+                    ),
+                  );
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _updateAnnouncement(String id, String title, String details) async {
+    try {
+      await FirebaseFirestore.instance.collection('announcements').doc(id).update({
+        'title': title,
+        'details': details,
+      });
+      _fetchAnnouncementsFromFirestore();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error updating announcement: $e"),
+        ),
+      );
+    }
+  }
+
+  Future<void> _deleteAnnouncement(String id) async {
+    try {
+      await FirebaseFirestore.instance.collection('announcements').doc(id).delete();
+      _fetchAnnouncementsFromFirestore();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error deleting announcement: $e"),
+        ),
+      );
+    }
+  }
+
+
   Widget _buildAnnouncementsSection() {
+    final User? user = FirebaseAuth.instance.currentUser;
+
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Column(
@@ -635,11 +726,12 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (user != null && user.email == 'testuser@gmail.com')
               ElevatedButton(
                 onPressed: () {
                   _addAnnouncementDialog();
                 },
-                child: const Text('Add Announcement'),
+                child: const Icon(Icons.add_outlined),
               )
             ],
           ),
@@ -647,6 +739,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
           ...announcements.map((announcement) => _buildAnnouncementsCard(
             announcement.title,
             announcement.details,
+            announcement.id, // Pass the announcement id
           )).toList(),
         ],
       ),
@@ -656,12 +749,36 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
 
 
 
-  Widget _buildAnnouncementsCard(String title, String announcement) {
+  Widget _buildAnnouncementsCard(String title, String announcement, String id) {
+    final User? user = FirebaseAuth.instance.currentUser;
+
     return Card(
       child: ExpansionTile(
         iconColor: Colors.blueGrey,
-        title: Text(title),
-        subtitle: Text(announcement.split('\n')[0]), // Shows only the first sentence
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(child: Text(title)),
+            if (user != null && user.email == 'testuser@gmail.com') // Check if the current user is testuser@gmail.com
+              Row(
+                children: [
+                  IconButton(
+                    icon: Icon(Icons.edit, color: Colors.blue),
+                    onPressed: () {
+                      _editAnnouncementDialog(id, title, announcement);
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.delete, color: Colors.red),
+                    onPressed: () {
+                      _deleteAnnouncement(id);
+                    },
+                  ),
+                ],
+              ),
+          ],
+        ),
+        subtitle: Text(announcement.split('.')[0]), // Shows only the first sentence
         children: [
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -674,6 +791,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
       ),
     );
   }
+
 
 
   Widget _buildUpcomingEventsSection() {
@@ -774,60 +892,88 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
     );
   }
 
+  Widget _buildSermonLinkCard(Map<String, String> sermon) {
+    return Card(
+      child: ListTile(
+        title: Text(sermon["title"] ?? 'No Title'),
+        subtitle: Text(sermon["preacher"] ?? 'Unknown Preacher'),
+        trailing: const Icon(Icons.link),
+        onTap: () {
+          String url = sermon["url"] ?? '';
+          if (url.isNotEmpty) {
+            _launchURL(url);
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No URL provided for this sermon')),
+            );
+          }
+        },
+      ),
+    );
+  }
+
   Widget _buildSermonLinksSection() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
+    final User? user = FirebaseAuth.instance.currentUser;
+
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
+              const Text(
                 'Sermon Links',
                 style: TextStyle(
-                  fontSize: 20,
+                  fontSize: 20.0,
                   fontWeight: FontWeight.bold,
                 ),
               ),
+              if (user != null && user.email == 'testuser@gmail.com') // Check if the current user is testuser@gmail.com
+              ElevatedButton(
+                onPressed: () {
+                  _addSermonInfoDialog();
+                },
+                child: const Icon(Icons.add_outlined),
+              )
             ],
           ),
-          const SizedBox(height: 8),
-          ...sermonLinks.map((sermon) => ListTile(
-            title: Text('Title: ${sermon["title"] ?? "No title"}'),
-            subtitle: Text('Preacher: ${sermon["preacher"] ?? "Unknown"}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () {
-                    _editSermonLinkDialog(sermon);
-                  },
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.red),
-                  onPressed: () {
-                    _deleteSermonInfo(sermon["id"]!);
-                  },
-                ),
-                TextButton(
-                  onPressed: () {
-                    if (sermon["url"] != null && sermon["url"]!.isNotEmpty) {
-                      _launchURL(sermon["url"]!);
-                    } else {
-                      // Handle the case where the URL is missing
-                      print("URL is missing for this sermon");
-                    }
-                  },
-                  child: const Text('Listen'),
-                ),
-              ],
+          const SizedBox(height: 10.0),
+          ...sermonLinks.map((sermon) => Card(
+            child: ListTile(
+              title: Text(
+                'Title: ${sermon["title"] ?? ''}',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'Preacher: ${sermon["preacher"] ?? ''}',
+              ),
+              trailing: FirebaseAuth.instance.currentUser!.email == 'testuser@gmail.com'
+                  ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blue,),
+                    onPressed: () {
+                      _editSermonLinkDialog(sermon);
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete,color: Colors.red,),
+                    onPressed: () {
+                      _deleteSermonInfo(sermon["id"]!);
+                    },
+                  ),
+                ],
+              ):null,
             ),
           )),
         ],
       ),
     );
   }
+
 
   void _openSermonLink(String url) {
     // Implement functionality to open the sermon link (e.g., launch a URL in the browser or a video player)
@@ -840,7 +986,7 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
       child: const Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-           Text(
+          Text(
             'Contact Us',
             style: TextStyle(
               color: Colors.white,
@@ -848,14 +994,14 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
               fontWeight: FontWeight.bold,
             ),
           ),
-           SizedBox(height: 10.0),
-           Text(
+          SizedBox(height: 10.0),
+          Text(
             'Email: pastoroffice@kabwatabaptistchurch.com',
             style: TextStyle(
               color: Colors.white,
             ),
           ),
-           Text(
+          Text(
             'Phone: +260 123 456 789',
             style: TextStyle(
               color: Colors.white,
@@ -872,66 +1018,6 @@ class _ChurchHomePageState extends State<ChurchHomePage> {
       await launch(url);
     } else {
       throw 'Could not launch $url';
-    }
-
-    void _editSermonLinksDialog() {
-      String title = '';
-      String preacher = '';
-      File? sermonFile;
-
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Add a New Sermon'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                TextField(
-                  onChanged: (value) {
-                    title = value;
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Title',
-                  ),
-                ),
-                TextField(
-                  onChanged: (value) {
-                    preacher = value;
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Preacher',
-                  ),
-                ),
-              ],
-            ),
-            actions: <Widget>[
-              ElevatedButton(
-                child: const Text('Cancel'),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-              ElevatedButton(
-                child: const Text('Add'),
-                onPressed: () {
-                  if (title.isNotEmpty && preacher.isNotEmpty &&
-                      url.isNotEmpty) {
-                    _addSermonLink(title, preacher, url);
-                    Navigator.of(context).pop();
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please fill all fields.'),
-                      ),
-                    );
-                  }
-                },
-              ),
-            ],
-          );
-        },
-      );
     }
   }
 }

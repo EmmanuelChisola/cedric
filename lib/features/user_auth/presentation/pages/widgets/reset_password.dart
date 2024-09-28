@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ForgotPassword extends StatefulWidget {
   @override
@@ -21,29 +20,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       });
 
       try {
-        final List<String> signInMethods = await FirebaseAuth.instance
-            .fetchSignInMethodsForEmail(_emailController.text.trim());
-
-        if (signInMethods.isEmpty) {
-          setState(() {
-            _message = 'No account found with this email address.';
-
-          });
-          return;
-        }
-
-        final memberSnapshot = await FirebaseFirestore.instance
-            .collection('members')
-            .where('email', isEqualTo: _emailController.text.trim())
-            .get();
-
-        if (memberSnapshot.docs.isEmpty) {
-          setState(() {
-            _message = 'No member account found with this email address.';
-          });
-          return;
-        }
-
         await FirebaseAuth.instance
             .sendPasswordResetEmail(email: _emailController.text.trim());
         setState(() {
@@ -51,7 +27,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
         });
       } on FirebaseAuthException catch (e) {
         setState(() {
-          _message = e.message;
+          _message = e.message ?? 'An error occurred. Please try again.';
         });
       } catch (e) {
         setState(() {
@@ -68,7 +44,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Forgot Password"),),
+      appBar: AppBar(title: const Text("Forgot Password")),
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
@@ -136,7 +112,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.redAccent
+                      color: Colors.white,
                     ),
                   ),
                 ),
