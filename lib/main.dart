@@ -1,6 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:securecom/api/firebase_api.dart';
 import 'package:securecom/features/app/spla_scree/spla_sc.dart';
 import 'package:securecom/features/user_auth/presentation/pages/add_announcements.dart';
 import 'package:securecom/features/user_auth/presentation/pages/login_pg.dart';
@@ -22,16 +23,15 @@ Future main() async {
     );
   } else {
     await Firebase.initializeApp();
+    await FirebaseApi().initNotification();
   }
   runApp(const KBCApp());
-
 }
 
 class KBCApp extends StatelessWidget {
   const KBCApp({super.key});
 
   @override
-
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
